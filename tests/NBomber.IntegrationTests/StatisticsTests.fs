@@ -26,23 +26,19 @@ open Tests.TestHelper
 
 module ScenarioStatsTests =
 
-    let internal baseSteps = {
-        StepName = "name"
-        ClientFactory = None
-        Execute =
-          fun _ -> task { return Response.ok(sizeBytes = 100) }
-          |> Step.StepContext.toUntypedExecute
-        Feed = Some(Feed.createConstant "feed name" [ 1; 2 ])
-        Timeout = seconds 0
-        DoNotTrack = Constants.DefaultDoNotTrack
-        IsPause = false
-    }
+    let internal baseFeed = Feed.createConstant "feed name" [1; 2]
+
+    let internal baseStep =
+        Step.create("name", feed = baseFeed, timeout = seconds 0, execute = fun ctx -> task {
+            return Response.ok(sizeBytes = 100)
+        })
+        :?> DomainTypes.Step
 
     let internal baseScenario = {
         ScenarioName = "scenario name"
         Init = None
         Clean = None
-        Steps = [ baseSteps ]
+        Steps = [ baseStep ]
         LoadTimeLine = LoadTimeLine.Empty
         WarmUpDuration = None
         PlanedDuration = seconds 0
@@ -194,7 +190,7 @@ module ScenarioStatsTests =
     [<Fact>]
     let ``ScenarioStats should not collect stats for steps market as DoNotTrack`` () =
 
-        let doNotTrackStep = { baseSteps with DoNotTrack = true }
+        let doNotTrackStep = { baseStep with DoNotTrack = true }
         let scenario = { baseScenario with Steps = [ doNotTrackStep ] }
 
         let scenarioStats =
@@ -211,7 +207,7 @@ module ScenarioStatsTests =
     [<Fact>]
     let ``ScenarioStats StepInfo should should fallback on default values`` () =
 
-        let doNotTrackStep = { baseSteps with Feed = None }
+        let doNotTrackStep = { baseStep with Feed = None }
         let scenario = { baseScenario with Steps = [ doNotTrackStep ] }
 
         let scenarioStats =
@@ -241,8 +237,8 @@ module ScenarioStatsTests =
                 (seconds 1)
 
         let stepStats = scenarioStats.StepStats[0]
-        test <@ stepStats.StepName = baseSteps.StepName @>
-        test <@ stepStats.StepInfo.Timeout = baseSteps.Timeout @>
+        test <@ stepStats.StepName = baseStep.StepName @>
+        test <@ stepStats.StepInfo.Timeout = baseStep.Timeout @>
 
 module NodeStatsTests =
 

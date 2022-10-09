@@ -17,23 +17,18 @@ type StopCommand =
     | StopScenario of scenarioName:string * reason:string
     | StopTest of reason:string
 
-type UntypedStepContext = {
-    StepName: string
-    ScenarioInfo: ScenarioInfo
-    mutable CancellationTokenSource: CancellationTokenSource
+type StepContextArgs = {
     Logger: ILogger
-    mutable Client: obj
-    mutable FeedItem: obj
-    mutable Data: Dictionary<string,obj>
-    mutable InvocationNumber: int
-    StopScenario: string * string -> unit // scenarioName * reason
-    StopCurrentTest: string -> unit       // reason
+    ScenarioInfo: ScenarioInfo
+    StopTest: string -> unit
+    StopScenario: string * string -> unit
 }
 
 type Step = {
     StepName: string
     ClientFactory: IUntypedClientFactory option
-    Execute: UntypedStepContext -> Task<Response>
+    Execute: IUntypedStepContext -> Task<Response>
+    CreateEmptyStepContext: StepContextArgs -> IUntypedStepContext
     Feed: IFeed<obj> option
     Timeout: TimeSpan
     DoNotTrack: bool
@@ -46,7 +41,7 @@ type Step = {
 type RunningStep = {
     StepIndex: int
     Value: Step
-    Context: UntypedStepContext
+    Context: IUntypedStepContext
 }
 
 type LoadTimeSegment = {

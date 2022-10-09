@@ -7,16 +7,15 @@ open NBomber.Contracts
 open NBomber.Contracts.Internal
 open NBomber.Domain
 open NBomber.Domain.DomainTypes
-open NBomber.Domain.Step
 open NBomber.Domain.Stats.ScenarioStatsActor
 
-type ScenarioActor(scnCtx: ScenarioExecContext, scenarioInfo: ScenarioInfo) =
+type ScenarioActor(scnCtx: RunningStep.RunningScenarioContext, scenarioInfo: ScenarioInfo) =
 
     let _logger = scnCtx.Logger.ForContext<ScenarioActor>()
     let _scenario = scnCtx.Scenario
     let mutable _actorWorking = false
 
-    let _stepDep = {
+    let _stCtx: RunningStep.RunningStepContext = {
         ScenarioExecContext = scnCtx
         ScenarioInfo = scenarioInfo
         Data = Dictionary<string,obj>()
@@ -24,7 +23,7 @@ type ScenarioActor(scnCtx: ScenarioExecContext, scenarioInfo: ScenarioInfo) =
 
     let _steps =
         _scenario.Steps
-        |> List.map(fun step -> RunningStep.create _stepDep _scenario.StepOrderIndex[step.StepName] step)
+        |> List.map(fun step -> RunningStep.create _stCtx _scenario.StepOrderIndex[step.StepName] step)
         |> List.toArray
 
     let execSteps (runInfinite: bool) = backgroundTask {
@@ -37,11 +36,11 @@ type ScenarioActor(scnCtx: ScenarioExecContext, scenarioInfo: ScenarioInfo) =
                     && not scnCtx.ScenarioCancellationToken.IsCancellationRequested
                     && _scenario.PlanedDuration.TotalMilliseconds > scnCtx.ScenarioTimer.Elapsed.TotalMilliseconds do
 
-                    _stepDep.Data.Clear()
+                    _stCtx.Data.Clear()
 
                     try
                         let stepOrder = Scenario.getStepOrder _scenario
-                        do! RunningStep.execSteps _stepDep _steps stepOrder
+                        do! RunningStep.execSteps _stCtx _steps stepOrder
                     with
                     | ex ->
                         _logger.Error(ex, $"Unhandled exception for Scenario: {_scenario.ScenarioName}")

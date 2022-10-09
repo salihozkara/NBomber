@@ -18,6 +18,7 @@ open NBomber.Configuration
 open NBomber.Extensions.Internal
 open NBomber.Errors
 open NBomber.Domain.DomainTypes
+open NBomber.Domain.StepContext
 open NBomber.DomainServices
 
 /// DataFeed helps inject test data into your load test. It represents a data source.
@@ -75,9 +76,14 @@ type Step =
             clientFactory
             |> Option.map(fun x -> x :?> IUntypedClientFactory)
 
+        let createEmptyStepContext (stepName: string) (args: StepContextArgs) =
+            StepContext<'TClient,'TFeedItem>(args.Logger, stepName, args.ScenarioInfo, args.StopTest, args.StopScenario)
+            :> IUntypedStepContext
+
         { StepName = name
           ClientFactory = factory
-          Execute = execute |> Domain.Step.StepContext.toUntypedExecute
+          Execute = execute |> Domain.StepContext.toUntypedExecute
+          CreateEmptyStepContext = createEmptyStepContext name
           Feed = feed |> Option.map Domain.Feed.toUntypedFeed
           Timeout = timeout |> Option.defaultValue TimeSpan.Zero
           DoNotTrack = defaultArg doNotTrack Constants.DefaultDoNotTrack

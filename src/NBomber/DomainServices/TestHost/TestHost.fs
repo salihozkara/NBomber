@@ -18,7 +18,7 @@ open NBomber.Extensions.Internal
 open NBomber.Errors
 open NBomber.Domain
 open NBomber.Domain.DomainTypes
-open NBomber.Domain.Step
+open NBomber.Domain.RunningStep
 open NBomber.Domain.Stats
 open NBomber.Domain.Stats.ScenarioStatsActor
 open NBomber.Domain.Concurrency.Scheduler.ScenarioScheduler
