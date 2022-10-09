@@ -44,6 +44,10 @@ module StepContext =
         with
         | ex -> Unchecked.defaultof<'T>
 
+    let getFromData (key: string) (data: Dictionary<string,obj>) =
+        let item = data[key]
+        item :?> 'T
+
     let getClient (scnInfo: ScenarioInfo) (factory: IUntypedClientFactory option) =
         match factory with
         | Some v ->
@@ -64,20 +68,20 @@ module StepContext =
           StopScenario = fun (scnName,reason) -> StopScenario(scnName, reason) |> stCtx.ScenarioExecContext.ExecStopCommand
           StopCurrentTest = fun reason -> StopTest(reason) |> stCtx.ScenarioExecContext.ExecStopCommand }
 
-    let create (untyped: UntypedStepContext) = {
-        new IStepContext<'TClient,'TFeedItem> with
+    let create (untyped: UntypedStepContext) =
+        { new IStepContext<'TClient,'TFeedItem> with
             member _.StepName = untyped.StepName
             member _.ScenarioInfo = untyped.ScenarioInfo
             member _.CancellationToken = untyped.CancellationTokenSource.Token
             member _.Client = untyped.Client :?> 'TClient
             member _.Data = untyped.Data
+            member _.GetFromData(key) = getFromData key untyped.Data
             member _.FeedItem = untyped.FeedItem :?> 'TFeedItem
             member _.Logger = untyped.Logger
             member _.InvocationNumber = untyped.InvocationNumber
-            member _.GetPreviousStepResponse() = getPreviousStepResponse(untyped.Data)
+            member _.GetPreviousStepResponse() = getPreviousStepResponse untyped.Data
             member _.StopScenario(scenarioName, reason) = untyped.StopScenario(scenarioName, reason)
-            member _.StopCurrentTest(reason) = untyped.StopCurrentTest(reason)
-    }
+            member _.StopCurrentTest(reason) = untyped.StopCurrentTest(reason) }
 
     let toUntypedExecute (execute: IStepContext<'TClient,'TFeedItem> -> Task<Response>) =
         fun (untyped: UntypedStepContext) ->
